@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Sub Goal Overlay</title>
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      background: transparent;
+      overflow: hidden;
+    }
+    .wrapper {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+    }
+    .number-group {
+      display: flex;
+    }
+
+    .digit {
+      display: inline-block;
+      background-image: url('/img/numbers.png');
+      background-repeat: no-repeat;
+      background-size: 629px 391px; /* full image size */
+      width: 120px;
+      height: 190px;
+      margin: 0 -4px;
+      vertical-align: bottom;
+    }
+
+    /* small upward shift for bottom-row digits */
+    .digit-bottom {
+      transform: translateY(-6px);
+    }
+
+    .slash {
+      height: 210px;   /* slightly larger candy cane */
+      margin: 0 40px;
+    }
+
+    /* Row 0 (top), y = 0 */
+    .digit-1 { background-position: calc(-125.8px * 0) 0; }
+    .digit-2 { background-position: calc(-125.8px * 1) 0; }
+    .digit-3 { background-position: calc(-125.8px * 2) 0; }
+    .digit-4 { background-position: calc(-125.8px * 3) 0; }
+    .digit-5 { background-position: calc(-125.8px * 4) 0; }
+
+    /* Row 1 (bottom), y = -195.5px (original), shifted with .digit-bottom */
+    .digit-6 { background-position: calc(-125.8px * 0) -195.5px; }
+    .digit-7 { background-position: calc(-125.8px * 1) -195.5px; }
+    .digit-8 { background-position: calc(-125.8px * 2) -195.5px; }
+    .digit-9 { background-position: calc(-125.8px * 3) -195.5px; }
+    .digit-0 { background-position: calc(-125.8px * 4) -195.5px; }
+  </style>
+</head>
+<body>
+  <div class="wrapper">
+    <div class="number-group" id="current"></div>
+    <img src="/img/candy-cane.png" class="slash" alt="/">
+    <div class="number-group" id="goal"></div>
+  </div>
+
+  <script>
+  const bottomRow = new Set(['6', '7', '8', '9', '0']);
+
+  async function fetchSubgoal() {
+    const params = new URLSearchParams(window.location.search);
+    const channel = params.get('channel') || '0pogix';
+
+    try {
+      const res = await fetch(`/api/subgoal?channel=${encodeURIComponent(channel)}`);
+      const data = await res.json();
+      renderNumber('current', String(data.current));
+      renderNumber('goal', String(data.goal));
+    } catch (err) {
+      console.error('Failed to load subgoal', err);
+    }
+  }
+
+  function renderNumber(containerId, value) {
+    const container = document.getElementById(containerId);
+    container.innerHTML = '';
+    for (const ch of value) {
+      const span = document.createElement('span');
+      span.classList.add('digit', 'digit-' + ch);
+      if (bottomRow.has(ch)) {
+        span.classList.add('digit-bottom');
+      }
+      container.appendChild(span);
+    }
+  }
+
+  // initial load + refresh every 5s
+  fetchSubgoal();
+  setInterval(fetchSubgoal, 5000);
+</script>
+
+</body>
+</html>
