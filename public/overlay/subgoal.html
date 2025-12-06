@@ -4,57 +4,54 @@
   <meta charset="UTF-8">
   <title>Sub Goal Overlay</title>
   <style>
-    html, body {
-      margin: 0;
-      padding: 0;
-      background: transparent;
-      overflow: hidden;
-    }
-    .wrapper {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      height: 100vh;
-    }
-    .number-group {
-      display: flex;
-    }
+  html, body {
+    margin: 0;
+    padding: 0;
+    background: transparent;
+    overflow: hidden;
+  }
+  .wrapper {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+  }
+  .number-group {
+    display: flex;
+  }
 
-    .digit {
-      display: inline-block;
-      background-image: url('/img/numbers.png');
-      background-repeat: no-repeat;
-      background-size: 629px 391px; /* full image size */
-      width: 120px;
-      height: 190px;
-      margin: 0 -4px;
-      vertical-align: bottom;
-    }
+  .digit {
+  display: inline-block;
+  background-image: url('/img/numbers.png');
+  background-repeat: no-repeat;
+  background-size: 677px 116px; /* full image size */
+  width: 64px;   /* slightly smaller than 67.7 to avoid edges */
+  height: 110px; /* slightly smaller than 116 */
+  margin: 0 -2px;
+  vertical-align: bottom;
+}
 
-    /* small upward shift for bottom-row digits */
-    .digit-bottom {
-      transform: translateY(-6px);
-    }
+.slash {
+  height: 110px;
+  margin: 0 30px;
+}
 
-    .slash {
-      height: 210px;   /* slightly larger candy cane */
-      margin: 0 40px;
-    }
+/* single row, y = 0; adjust order if your sheet is 1–0 vs 0–9 */
 
-    /* Row 0 (top), y = 0 */
-    .digit-1 { background-position: calc(-125.8px * 0) 0; }
-    .digit-2 { background-position: calc(-125.8px * 1) 0; }
-    .digit-3 { background-position: calc(-125.8px * 2) 0; }
-    .digit-4 { background-position: calc(-125.8px * 3) 0; }
-    .digit-5 { background-position: calc(-125.8px * 4) 0; }
+/* if the row is 0 1 2 3 4 5 6 7 8 9 from left to right: */
+.digit-0 { background-position: calc(-67.7px * 0) 0; }
+.digit-1 { background-position: calc(-67.7px * 1) 0; }
+.digit-2 { background-position: calc(-67.7px * 2) 0; }
+.digit-3 { background-position: calc(-67.7px * 3) 0; }
+.digit-4 { background-position: calc(-67.7px * 4) 0; }
+.digit-5 { background-position: calc(-67.7px * 5) 0; }
+.digit-6 { background-position: calc(-67.7px * 6) 0; }
+.digit-7 { background-position: calc(-67.7px * 7) 0; }
+.digit-8 { background-position: calc(-67.7px * 8) 0; }
+.digit-9 { background-position: calc(-67.7px * 9) 0; }
+   /* keep bottom row baseline */
+</style>
 
-    /* Row 1 (bottom), y = -195.5px (original), shifted with .digit-bottom */
-    .digit-6 { background-position: calc(-125.8px * 0) -195.5px; }
-    .digit-7 { background-position: calc(-125.8px * 1) -195.5px; }
-    .digit-8 { background-position: calc(-125.8px * 2) -195.5px; }
-    .digit-9 { background-position: calc(-125.8px * 3) -195.5px; }
-    .digit-0 { background-position: calc(-125.8px * 4) -195.5px; }
-  </style>
 </head>
 <body>
   <div class="wrapper">
@@ -64,7 +61,19 @@
   </div>
 
   <script>
-  const bottomRow = new Set(['6', '7', '8', '9', '0']);
+  // map each digit to its vertical-offset class
+  const voClass = {
+    '1': 'vo-1',
+    '2': 'vo-2',
+    '3': 'vo-3',
+    '4': 'vo-4',
+    '5': 'vo-5',
+    '6': 'vo-6',
+    '7': 'vo-7',
+    '8': 'vo-8',
+    '9': 'vo-9',
+    '0': 'vo-0'
+  };
 
   async function fetchSubgoal() {
     const params = new URLSearchParams(window.location.search);
@@ -86,17 +95,14 @@
     for (const ch of value) {
       const span = document.createElement('span');
       span.classList.add('digit', 'digit-' + ch);
-      if (bottomRow.has(ch)) {
-        span.classList.add('digit-bottom');
-      }
+      const extra = voClass[ch];
+      if (extra) span.classList.add(extra);
       container.appendChild(span);
     }
   }
 
-  // initial load + refresh every 5s
   fetchSubgoal();
   setInterval(fetchSubgoal, 5000);
 </script>
-
 </body>
 </html>
