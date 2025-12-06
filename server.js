@@ -3,6 +3,7 @@ const path = require('path');
 const dotenv = require('dotenv');
 const axios = require('axios');
 const cookieParser = require('cookie-parser');
+const { query } = require('./db');
 
 dotenv.config();
 
@@ -27,6 +28,33 @@ app.use(cookieParser());
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(express.static(path.join(__dirname, 'public')));
+
+// --- DB init + load ---
+
+async function initDb() {
+  await query(`
+    CREATE TABLE IF NOT EXISTS twitch_tokens (
+      channel        text PRIMARY KEY,
+      broadcaster_id text NOT NULL,
+      access_token   text NOT NULL,
+      refresh_token  text NOT NULL
+    );
+  `);
+}
+
+async function loadTokens() {
+  const res = await query(
+    'SELECT channel, broadcaster_id, access_token, refresh_token FROM twitch_tokens'
+  );
+  res.rows.forEach((row) => {
+    tokensByChannel[row.channel.toLowerCase()] = {
+      access_token: row.access_token,
+      refresh_token: row.refresh_token,
+      broadcaster_id: row.broadcaster_id
+    };
+  });
+  console.log('Loaded tokens for channels:', Object.keys(tokensByChannel));
+}
 
 // health
 app.get('/health', (req, res) => {
@@ -91,7 +119,7 @@ app.get('/auth/twitch/callback', async (req, res) => {
 
     const { access_token, refresh_token } = tokenRes.data;
 
-    // get broadcaster_id from /users [web:1][web:77]
+    // get broadcaster_id from /users
     const userRes = await axios.get('https://api.twitch.tv/helix/users', {
       headers: {
         'Client-Id': process.env.TWITCH_CLIENT_ID,
@@ -106,6 +134,22 @@ app.get('/auth/twitch/callback', async (req, res) => {
       broadcaster_id: user.id
     };
 
+    // persist in Postgres so tokens survive restarts
+    if (process.env.DATABASE_URL) {
+      await query(
+        `
+        INSERT INTO twitch_tokens (channel, broadcaster_id, access_token, refresh_token)
+        VALUES ($1, $2, $3, $4)
+        ON CONFLICT (channel)
+        DO UPDATE SET
+          broadcaster_id = EXCLUDED.broadcaster_id,
+          access_token   = EXCLUDED.access_token,
+          refresh_token  = EXCLUDED.refresh_token
+        `,
+        [channel, user.id, access_token, refresh_token]
+      );
+    }
+
     console.log('Stored tokens for channel', channel, tokensByChannel[channel]);
 
     res.send(
@@ -118,7 +162,7 @@ app.get('/auth/twitch/callback', async (req, res) => {
 });
 // ---- OAuth: end ----
 
-// helper: get current subs from Twitch [web:1][web:83]
+// helper: get current subs from Twitch
 async function getCurrentSubsForChannel(channel) {
   const key = channel.toLowerCase();
   const tokenInfo = tokensByChannel[key];
@@ -138,7 +182,6 @@ async function getCurrentSubsForChannel(channel) {
       }
     });
 
-    // endpoint returns total count in `total` field [web:1][web:83]
     const total = res.data.total ?? res.data.data?.length ?? 0;
     return total;
   } catch (err) {
@@ -147,7 +190,7 @@ async function getCurrentSubsForChannel(channel) {
   }
 }
 
-// set goal from external callers (e.g. StreamElements) [web:46]
+// set goal from external callers (e.g. StreamElements)
 app.all('/api/setgoal', (req, res) => {
   const channel = (req.body.channel || req.query.channel || '').toLowerCase();
   const goalStr = req.body.goal || req.query.goal;
@@ -189,6 +232,25 @@ app.get('/overlay/subgoal', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'overlay', 'subgoal.html'));
 });
 
-app.listen(PORT, () => {
-  console.log(`Server running on http://localhost:${PORT}`);
+// startup: init DB if available, load tokens, then listen
+async function start() {
+  if (process.env.DATABASE_URL) {
+    try {
+      await initDb();
+      await loadTokens();
+    } catch (err) {
+      console.error('Failed to init/load DB', err);
+    }
+  } else {
+    console.warn('DATABASE_URL not set; starting without DB persistence.');
+  }
+
+  app.listen(PORT, () => {
+    console.log(`Server running on http://localhost:${PORT}`);
+  });
+}
+
+start().catch((err) => {
+  console.error('Failed to start app', err);
+  process.exit(1);
 });
