@@ -4,53 +4,52 @@
   <meta charset="UTF-8">
   <title>Sub Goal Overlay</title>
   <style>
-  html, body {
-    margin: 0;
-    padding: 0;
-    background: transparent;
-    overflow: hidden;
-  }
-  .wrapper {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    height: 100vh;
-  }
-  .number-group {
-    display: flex;
-  }
+    html, body {
+      margin: 0;
+      padding: 0;
+      background: transparent;
+      overflow: hidden;
+    }
+    .wrapper {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+    }
+    .number-group {
+      display: flex;
+    }
 
-  .digit {
-  display: inline-block;
-  background-image: url('/img/numbers.png');
-  background-repeat: no-repeat;
-  background-size: 677px 116px; /* full image */
-  width: 70px;     /* wider than 67.7 so no clipping */
-  height: 116px;   /* full height */
-  margin: 0 0px;   /* no negative margin */
-  vertical-align: bottom;
-}
+    .digit {
+      display: inline-block;
+      background-image: url('/img/numbers.png');
+      background-repeat: no-repeat;
+      background-size: 677px 369px; /* full image */
+      width: 130px;     /* a bit smaller than cellWidth (135.4) */
+      height: 180px;    /* a bit smaller than cellHeight (184.5) */
+      margin: 0 -4px;
+      vertical-align: bottom;
+    }
 
-/* single row, y = 0; adjust order if strip is 0–9 left to right */
-.digit-0 { background-position: calc(-67.7px * 0) 0; }
-.digit-1 { background-position: calc(-67.7px * 1) 0; }
-.digit-2 { background-position: calc(-67.7px * 2) 0; }
-.digit-3 { background-position: calc(-67.7px * 3) 0; }
-.digit-4 { background-position: calc(-67.7px * 4) 0; }
-.digit-5 { background-position: calc(-67.7px * 5) 0; }
-.digit-6 { background-position: calc(-67.7px * 6) 0; }
-.digit-7 { background-position: calc(-67.7px * 7) 0; }
-.digit-8 { background-position: calc(-67.7px * 8) 0; }
-.digit-9 { background-position: calc(-67.7px * 9) 0; }
+    .slash {
+      height: 190px;
+      margin: 0 40px;
+    }
 
-.slash {
-  height: 140px;  /* increase until it feels right */
-  margin: 0 40px; /* spacing between numbers and cane */
-}
+    /* Row 0 (top), y = 0 */
+    .digit-1 { background-position: calc(-135.4px * 0) 0; }
+    .digit-2 { background-position: calc(-135.4px * 1) 0; }
+    .digit-3 { background-position: calc(-135.4px * 2) 0; }
+    .digit-4 { background-position: calc(-135.4px * 3) 0; }
+    .digit-5 { background-position: calc(-135.4px * 4) 0; }
 
-   /* keep bottom row baseline */
-</style>
-
+    /* Row 1 (bottom), y = -184.5px */
+    .digit-6 { background-position: calc(-135.4px * 0) -184.5px; }
+    .digit-7 { background-position: calc(-135.4px * 1) -184.5px; }
+    .digit-8 { background-position: calc(-135.4px * 2) -184.5px; }
+    .digit-9 { background-position: calc(-135.4px * 3) -184.5px; }
+    .digit-0 { background-position: calc(-135.4px * 4) -184.5px; }
+  </style>
 </head>
 <body>
   <div class="wrapper">
@@ -60,48 +59,48 @@
   </div>
 
   <script>
-  // map each digit to its vertical-offset class
-  const voClass = {
-    '1': 'vo-1',
-    '2': 'vo-2',
-    '3': 'vo-3',
-    '4': 'vo-4',
-    '5': 'vo-5',
-    '6': 'vo-6',
-    '7': 'vo-7',
-    '8': 'vo-8',
-    '9': 'vo-9',
-    '0': 'vo-0'
-  };
+    // map each digit to its vertical-offset class (not used now, but kept for future tweaks)
+    const voClass = {
+      '1': 'vo-1',
+      '2': 'vo-2',
+      '3': 'vo-3',
+      '4': 'vo-4',
+      '5': 'vo-5',
+      '6': 'vo-6',
+      '7': 'vo-7',
+      '8': 'vo-8',
+      '9': 'vo-9',
+      '0': 'vo-0'
+    };
 
-  async function fetchSubgoal() {
-    const params = new URLSearchParams(window.location.search);
-    const channel = params.get('channel') || '0pogix';
+    async function fetchSubgoal() {
+      const params = new URLSearchParams(window.location.search);
+      const channel = params.get('channel') || '0pogix';
 
-    try {
-      const res = await fetch(`/api/subgoal?channel=${encodeURIComponent(channel)}`);
-      const data = await res.json();
-      renderNumber('current', String(data.current));
-      renderNumber('goal', String(data.goal));
-    } catch (err) {
-      console.error('Failed to load subgoal', err);
+      try {
+        const res = await fetch(`/api/subgoal?channel=${encodeURIComponent(channel)}`);
+        const data = await res.json();
+        renderNumber('current', String(data.current));
+        renderNumber('goal', String(data.goal));
+      } catch (err) {
+        console.error('Failed to load subgoal', err);
+      }
     }
-  }
 
-  function renderNumber(containerId, value) {
-    const container = document.getElementById(containerId);
-    container.innerHTML = '';
-    for (const ch of value) {
-      const span = document.createElement('span');
-      span.classList.add('digit', 'digit-' + ch);
-      const extra = voClass[ch];
-      if (extra) span.classList.add(extra);
-      container.appendChild(span);
+    function renderNumber(containerId, value) {
+      const container = document.getElementById(containerId);
+      container.innerHTML = '';
+      for (const ch of value) {
+        const span = document.createElement('span');
+        span.classList.add('digit', 'digit-' + ch);
+        const extra = voClass[ch];
+        if (extra) span.classList.add(extra);
+        container.appendChild(span);
+      }
     }
-  }
 
-  fetchSubgoal();
-  setInterval(fetchSubgoal, 5000);
-</script>
+    fetchSubgoal();
+    setInterval(fetchSubgoal, 5000);
+  </script>
 </body>
 </html>
