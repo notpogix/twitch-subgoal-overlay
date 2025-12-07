@@ -20,12 +20,17 @@
       display: flex;
       align-items: center;
     }
+
+    /* each digit PNG is large (e.g. 691x361); we scale and overlap them */
     .digit-img {
-      height: 140px;      /* adjust size of the numbers */
-      margin: 0 4px;
+      height: 140px;      /* overall size of digits */
+      width: 80px;        /* narrow visual box so they sit closer */
+      object-fit: contain;
+      margin: 0 -20px;    /* negative margin = overlap; tweak this value */
     }
+
     .slash {
-      height: 150px;      /* candy cane size */
+      height: 150px;
       margin: 0 40px;
     }
   </style>
@@ -57,7 +62,7 @@
       container.innerHTML = '';
       for (const ch of value) {
         const img = document.createElement('img');
-        img.src = `/img/${ch}.png`;   // uses public/img/0.png ... 9.png
+        img.src = `/img/${ch}.png`;
         img.alt = ch;
         img.className = 'digit-img';
         container.appendChild(img);
