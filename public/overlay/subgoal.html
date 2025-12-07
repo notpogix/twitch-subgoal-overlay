@@ -21,36 +21,34 @@
     }
 
     /* numbers.png = 664 x 103, 10 digits in one row */
-    /* base for all digits */
-.digit {
-  display: inline-block;
-  background-image: url('/img/numbers.png');
-  background-repeat: no-repeat;
-  background-size: 664px 103px;
-  width: 80px;
-  height: 103px;
-  margin: 0 -6px;
-  vertical-align: bottom;
-}
+    .digit {
+      display: inline-block;
+      background-image: url('/img/numbers.png');
+      background-repeat: no-repeat;
+      background-size: 664px 103px;
+      width: 72px;      /* slightly wider than 66.4 */
+      height: 103px;    /* full height */
+      margin: 0 -2px;   /* small overlap to tighten spacing */
+      vertical-align: bottom;
+    }
 
-/* tweak 0 specifically: make it a bit wider and shift background left */
-.digit-0 {
-  width: 86px;                         /* slightly wider */
-  margin-right: -10px;                 /* close gap to next char */
-  background-position: calc(-66.4px * 0 - 4px) 0; /* nudge left 4px */
-}
+    /* candy cane back to reasonable size */
+    .slash {
+      height: 110px;
+      margin: 0 30px;
+    }
 
-/* remaining digits unchanged */
-.digit-1 { background-position: calc(-66.4px * 1) 0; }
-.digit-2 { background-position: calc(-66.4px * 2) 0; }
-.digit-3 { background-position: calc(-66.4px * 3) 0; }
-.digit-4 { background-position: calc(-66.4px * 4) 0; }
-.digit-5 { background-position: calc(-66.4px * 5) 0; }
-.digit-6 { background-position: calc(-66.4px * 6) 0; }
-.digit-7 { background-position: calc(-66.4px * 7) 0; }
-.digit-8 { background-position: calc(-66.4px * 8) 0; }
-.digit-9 { background-position: calc(-66.4px * 9) 0; }
-
+    /* assume strip order: 0 1 2 3 4 5 6 7 8 9 */
+    .digit-0 { background-position: -4px 0; }                    /* small manual nudge */
+    .digit-1 { background-position: calc(-66.4px * 1) 0; }
+    .digit-2 { background-position: calc(-66.4px * 2) 0; }
+    .digit-3 { background-position: calc(-66.4px * 3) 0; }
+    .digit-4 { background-position: calc(-66.4px * 4) 0; }
+    .digit-5 { background-position: calc(-66.4px * 5) 0; }
+    .digit-6 { background-position: calc(-66.4px * 6) 0; }
+    .digit-7 { background-position: calc(-66.4px * 7) 0; }
+    .digit-8 { background-position: calc(-66.4px * 8) 0; }
+    .digit-9 { background-position: calc(-66.4px * 9) 0; }
   </style>
 </head>
 <body>
@@ -61,19 +59,6 @@
   </div>
 
   <script>
-    const voClass = {
-      '1': 'vo-1',
-      '2': 'vo-2',
-      '3': 'vo-3',
-      '4': 'vo-4',
-      '5': 'vo-5',
-      '6': 'vo-6',
-      '7': 'vo-7',
-      '8': 'vo-8',
-      '9': 'vo-9',
-      '0': 'vo-0'
-    };
-
     async function fetchSubgoal() {
       const params = new URLSearchParams(window.location.search);
       const channel = params.get('channel') || '0pogix';
@@ -94,8 +79,6 @@
       for (const ch of value) {
         const span = document.createElement('span');
         span.classList.add('digit', 'digit-' + ch);
-        const extra = voClass[ch];
-        if (extra) span.classList.add(extra); // currently unused, but harmless
         container.appendChild(span);
       }
     }
