@@ -21,7 +21,7 @@
       align-items: center;
     }
     .digit-img {
-      height: 140px;      /* scale of numbers on screen; tweak as you like */
+      height: 140px;      /* adjust size of the numbers */
       margin: 0 4px;
     }
     .slash {
@@ -57,7 +57,7 @@
       container.innerHTML = '';
       for (const ch of value) {
         const img = document.createElement('img');
-        img.src = `/img/digits/${ch}.png`;
+        img.src = `/img/${ch}.png`;   // uses public/img/0.png ... 9.png
         img.alt = ch;
         img.className = 'digit-img';
         container.appendChild(img);
