@@ -24,22 +24,23 @@
     /* Outer box defines visual width and overlap; inner img can be wide. */
     .digit {
       position: relative;
-      width: 120px;        /* visible width of each digit */
-      height: 180px;       /* visible height */
-      margin: 0 -30px;     /* negative margin = overlap */
-      overflow: hidden;    /* hide extra left/right parts of the PNG */
+      width: 120px;
+      height: 180px;
+      margin: 0 -30px;
+      overflow: hidden;
       display: flex;
       align-items: center;
       justify-content: center;
     }
     .digit img {
-      height: 180px;       /* scale of the PNG */
+      height: 180px;
       width: auto;
     }
 
+    /* Bring cane closer to numbers */
     .slash {
       height: 220px;
-      margin: 0 80px;
+      margin: 0 40px;  /* was 80px; smaller = closer */
     }
   </style>
 </head>
