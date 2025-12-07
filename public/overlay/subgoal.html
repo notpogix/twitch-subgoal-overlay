@@ -20,15 +20,15 @@
       display: flex;
     }
 
-    /* 664 x 103, 10 digits in one row */
+    /* numbers.png = 664 x 103, 10 digits in one row */
     .digit {
       display: inline-block;
       background-image: url('/img/numbers.png');
       background-repeat: no-repeat;
       background-size: 664px 103px;
-      width: 70px;      /* wider than 66.4 so right edge isn’t cut */
+      width: 80px;      /* wider so full candy shows */
       height: 103px;    /* full height */
-      margin: 0 2px;    /* small positive margin */
+      margin: 0 -6px;   /* slight overlap to close gaps */
       vertical-align: bottom;
     }
 
@@ -38,7 +38,7 @@
       margin: 0 40px;
     }
 
-    /* if strip is 0–9 left to right */
+    /* strip order assumed: 0 1 2 3 4 5 6 7 8 9 left → right */
     .digit-0 { background-position: calc(-66.4px * 0) 0; }
     .digit-1 { background-position: calc(-66.4px * 1) 0; }
     .digit-2 { background-position: calc(-66.4px * 2) 0; }
@@ -49,7 +49,6 @@
     .digit-7 { background-position: calc(-66.4px * 7) 0; }
     .digit-8 { background-position: calc(-66.4px * 8) 0; }
     .digit-9 { background-position: calc(-66.4px * 9) 0; }
-    /* If the visual order in the strip is different (e.g. 1–0), remap these lines. */
   </style>
 </head>
 <body>
@@ -94,7 +93,7 @@
         const span = document.createElement('span');
         span.classList.add('digit', 'digit-' + ch);
         const extra = voClass[ch];
-        if (extra) span.classList.add(extra);
+        if (extra) span.classList.add(extra); // currently unused, but harmless
         container.appendChild(span);
       }
     }
