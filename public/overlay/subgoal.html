@@ -21,17 +21,17 @@
       align-items: center;
     }
 
-    /* each digit PNG is large (e.g. 691x361); we scale and overlap them */
+    /* make digits larger and still overlapped */
     .digit-img {
-      height: 140px;      /* overall size of digits */
-      width: 80px;        /* narrow visual box so they sit closer */
+      height: 200px;      /* was 140px – increase for bigger numbers */
+      width: 110px;       /* widen box so glyphs look fuller */
       object-fit: contain;
-      margin: 0 -20px;    /* negative margin = overlap; tweak this value */
+      margin: 0 -30px;    /* more negative margin to keep them tight */
     }
 
     .slash {
-      height: 150px;
-      margin: 0 40px;
+      height: 220px;      /* keep cane slightly taller than digits */
+      margin: 0 60px;
     }
   </style>
 </head>
