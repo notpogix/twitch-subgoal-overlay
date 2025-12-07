@@ -21,17 +21,25 @@
       align-items: center;
     }
 
-    /* make digits larger and still overlapped */
-    .digit-img {
-      height: 200px;      /* was 140px – increase for bigger numbers */
-      width: 110px;       /* widen box so glyphs look fuller */
-      object-fit: contain;
-      margin: 0 -30px;    /* more negative margin to keep them tight */
+    /* Outer box defines visual width and overlap; inner img can be wide. */
+    .digit {
+      position: relative;
+      width: 120px;        /* visible width of each digit */
+      height: 180px;       /* visible height */
+      margin: 0 -30px;     /* negative margin = overlap */
+      overflow: hidden;    /* hide extra left/right parts of the PNG */
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .digit img {
+      height: 180px;       /* scale of the PNG */
+      width: auto;
     }
 
     .slash {
-      height: 220px;      /* keep cane slightly taller than digits */
-      margin: 0 60px;
+      height: 220px;
+      margin: 0 80px;
     }
   </style>
 </head>
@@ -61,11 +69,15 @@
       const container = document.getElementById(containerId);
       container.innerHTML = '';
       for (const ch of value) {
+        const wrapper = document.createElement('div');
+        wrapper.className = 'digit';
+
         const img = document.createElement('img');
         img.src = `/img/${ch}.png`;
         img.alt = ch;
-        img.className = 'digit-img';
-        container.appendChild(img);
+
+        wrapper.appendChild(img);
+        container.appendChild(wrapper);
       }
     }
 
