@@ -20,37 +20,36 @@
       display: flex;
     }
 
-    /* numbers.png = 664 x 103, 10 digits in one row */
+    /* numbers.png = 677 x 369, 2 rows x 5 columns */
     .digit {
       display: inline-block;
       background-image: url('/img/numbers.png');
       background-repeat: no-repeat;
-      background-size: 664px 103px;
-      width: 68px;      /* single, consistent box for all digits */
-      height: 103px;
-      margin: 0 -1px;   /* tiny overlap to close any gap */
+      background-size: 677px 369px;
+      width: 130px;      /* a bit less than 135.4 to avoid borders */
+      height: 180px;     /* a bit less than 184.5 */
+      margin: 0 -4px;    /* slight overlap to tighten spacing */
       vertical-align: bottom;
     }
 
     .slash {
-      height: 110px;
-      margin: 0 30px;
+      height: 190px;
+      margin: 0 40px;
     }
 
-    /* assume strip order: 0 1 2 3 4 5 6 7 8 9 left → right */
+    /* Row 0 (top): 1 2 3 4 5 */
+    .digit-1 { background-position: calc(-135.4px * 0) 0; }
+    .digit-2 { background-position: calc(-135.4px * 1) 0; }
+    .digit-3 { background-position: calc(-135.4px * 2) 0; }
+    .digit-4 { background-position: calc(-135.4px * 3) 0; }
+    .digit-5 { background-position: calc(-135.4px * 4) 0; }
 
-    /* 0 gets a small inward crop from both sides via X offset */
-    .digit-0 { background-position: -2px 0; }
-
-    .digit-1 { background-position: calc(-66.4px * 1) 0; }
-    .digit-2 { background-position: calc(-66.4px * 2) 0; }
-    .digit-3 { background-position: calc(-66.4px * 3) 0; }
-    .digit-4 { background-position: calc(-66.4px * 4) 0; }
-    .digit-5 { background-position: calc(-66.4px * 5) 0; }
-    .digit-6 { background-position: calc(-66.4px * 6) 0; }
-    .digit-7 { background-position: calc(-66.4px * 7) 0; }
-    .digit-8 { background-position: calc(-66.4px * 8) 0; }
-    .digit-9 { background-position: calc(-66.4px * 9) 0; }
+    /* Row 1 (bottom): 6 7 8 9 0 */
+    .digit-6 { background-position: calc(-135.4px * 0) -184.5px; }
+    .digit-7 { background-position: calc(-135.4px * 1) -184.5px; }
+    .digit-8 { background-position: calc(-135.4px * 2) -184.5px; }
+    .digit-9 { background-position: calc(-135.4px * 3) -184.5px; }
+    .digit-0 { background-position: calc(-135.4px * 4) -184.5px; }
   </style>
 </head>
 <body>
