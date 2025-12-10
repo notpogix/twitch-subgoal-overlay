@@ -10,27 +10,16 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// --- simple in-memory stores ---
-/**
- * tokensByChannel = {
- *   channel_name_lowercase: {
- *     access_token,
- *     refresh_token,
- *     broadcaster_id
- *   }
- * }
- */
-const tokensByChannel = {};
-// goalsByChannel = { channel_name_lowercase: { goal: number } }
-const goalsByChannel = {};
+// --- in-memory stores ---
+const tokensByChannel = {}; // { channel: { access_token, refresh_token, broadcaster_id } }
+const goalsByChannel = {};  // { channel: { goal } }
 
 app.use(cookieParser());
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(express.static(path.join(__dirname, 'public')));
 
-// --- DB init + load ---
-
+// ---------- DB INIT + LOAD ----------
 async function initDb() {
   await query(`
     CREATE TABLE IF NOT EXISTS twitch_tokens (
@@ -43,27 +32,30 @@ async function initDb() {
 }
 
 async function loadTokens() {
-  const res = await query(
-    'SELECT channel, broadcaster_id, access_token, refresh_token FROM twitch_tokens'
-  );
-  res.rows.forEach((row) => {
-    tokensByChannel[row.channel.toLowerCase()] = {
-      access_token: row.access_token,
-      refresh_token: row.refresh_token,
-      broadcaster_id: row.broadcaster_id
-    };
-  });
-  console.log('Loaded tokens for channels:', Object.keys(tokensByChannel));
+  try {
+    const res = await query(
+      'SELECT channel, broadcaster_id, access_token, refresh_token FROM twitch_tokens'
+    );
+    res.rows.forEach((row) => {
+      tokensByChannel[row.channel.toLowerCase()] = {
+        access_token: row.access_token,
+        refresh_token: row.refresh_token,
+        broadcaster_id: row.broadcaster_id
+      };
+    });
+    console.log('Loaded tokens for channels:', Object.keys(tokensByChannel));
+  } catch (err) {
+    console.error('Failed to load tokens from DB', err);
+  }
 }
 
-// health
+// ---------- HEALTH ----------
 app.get('/health', (req, res) => {
   res.send('OK');
 });
 
-// ---- OAuth: start ----
+// ---------- OAUTH START ----------
 app.get('/auth/twitch', (req, res) => {
-  // ?channel=channelName must be provided so we know who this is for
   const channel = req.query.channel;
   if (!channel) {
     return res
@@ -85,7 +77,7 @@ app.get('/auth/twitch', (req, res) => {
   res.redirect(url);
 });
 
-// OAuth callback
+// ---------- OAUTH CALLBACK ----------
 app.get('/auth/twitch/callback', async (req, res) => {
   const { code, state, error, error_description } = req.query;
 
@@ -119,7 +111,7 @@ app.get('/auth/twitch/callback', async (req, res) => {
 
     const { access_token, refresh_token } = tokenRes.data;
 
-    // get broadcaster_id from /users
+    // get broadcaster_id
     const userRes = await axios.get('https://api.twitch.tv/helix/users', {
       headers: {
         'Client-Id': process.env.TWITCH_CLIENT_ID,
@@ -128,13 +120,13 @@ app.get('/auth/twitch/callback', async (req, res) => {
     });
 
     const user = userRes.data.data[0];
+
     tokensByChannel[channel] = {
       access_token,
       refresh_token,
       broadcaster_id: user.id
     };
 
-    // persist in Postgres so tokens survive restarts
     if (process.env.DATABASE_URL) {
       await query(
         `
@@ -160,37 +152,109 @@ app.get('/auth/twitch/callback', async (req, res) => {
     res.status(500).send('Failed to complete Twitch OAuth. Check server logs.');
   }
 });
-// ---- OAuth: end ----
 
-// helper: get current subs from Twitch
-async function getCurrentSubsForChannel(channel) {
-  const key = channel.toLowerCase();
-  const tokenInfo = tokensByChannel[key];
-  if (!tokenInfo) {
-    // no OAuth done yet for this channel
+// ---------- TOKEN REFRESH HELPER ----------
+async function refreshAccessToken(channel, tokenInfo) {
+  if (!tokenInfo?.refresh_token) {
+    console.error('No refresh_token for channel', channel);
     return null;
   }
 
-  const { access_token, broadcaster_id } = tokenInfo;
-
   try {
+    const res = await axios.post(
+      'https://id.twitch.tv/oauth2/token',
+      new URLSearchParams({
+        client_id: process.env.TWITCH_CLIENT_ID,
+        client_secret: process.env.TWITCH_CLIENT_SECRET,
+        grant_type: 'refresh_token',
+        refresh_token: tokenInfo.refresh_token
+      }),
+      {
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
+      }
+    );
+
+    const { access_token, refresh_token } = res.data;
+
+    // update in memory
+    tokensByChannel[channel] = {
+      ...tokenInfo,
+      access_token,
+      refresh_token
+    };
+
+    // update in DB
+    if (process.env.DATABASE_URL) {
+      await query(
+        `
+        UPDATE twitch_tokens
+        SET access_token = $2, refresh_token = $3
+        WHERE channel = $1
+        `,
+        [channel, access_token, refresh_token]
+      );
+    }
+
+    console.log('Refreshed token for channel', channel);
+    return tokensByChannel[channel];
+  } catch (err) {
+    console.error(
+      'Failed to refresh token for channel',
+      channel,
+      err.response?.data || err.message
+    );
+    return null;
+  }
+}
+
+// ---------- SUB COUNT HELPER ----------
+async function getCurrentSubsForChannel(channel) {
+  const key = channel.toLowerCase();
+  let tokenInfo = tokensByChannel[key];
+  if (!tokenInfo) {
+    return null;
+  }
+
+  const doRequest = async (access_token) => {
     const res = await axios.get('https://api.twitch.tv/helix/subscriptions', {
-      params: { broadcaster_id },
+      params: { broadcaster_id: tokenInfo.broadcaster_id },
       headers: {
         'Client-Id': process.env.TWITCH_CLIENT_ID,
         Authorization: `Bearer ${access_token}`
       }
     });
-
     const total = res.data.total ?? res.data.data?.length ?? 0;
     return total;
+  };
+
+  try {
+    return await doRequest(tokenInfo.access_token);
   } catch (err) {
+    // if token is invalid/expired, try refresh once
+    if (err.response?.status === 401) {
+      console.warn('401 for channel', channel, '- trying refresh');
+      const refreshed = await refreshAccessToken(key, tokenInfo);
+      if (!refreshed) {
+        return null;
+      }
+      try {
+        return await doRequest(refreshed.access_token);
+      } catch (err2) {
+        console.error(
+          'Error fetching subs after refresh for',
+          channel,
+          err2.response?.data || err2.message
+        );
+        return null;
+      }
+    }
+
     console.error('Error fetching subs for', channel, err.response?.data || err.message);
     return null;
   }
 }
 
-// set goal from external callers (e.g. StreamElements)
+// ---------- SET GOAL ----------
 app.all('/api/setgoal', (req, res) => {
   const channel = (req.body.channel || req.query.channel || '').toLowerCase();
   const goalStr = req.body.goal || req.query.goal;
@@ -212,7 +276,7 @@ app.all('/api/setgoal', (req, res) => {
   res.send(`Sub goal updated to ${goal}`);
 });
 
-// subgoal API used by overlay
+// ---------- SUBGOAL API ----------
 app.get('/api/subgoal', async (req, res) => {
   const channel = (req.query.channel || 'test').toLowerCase();
 
@@ -220,19 +284,18 @@ app.get('/api/subgoal', async (req, res) => {
 
   const current = await getCurrentSubsForChannel(channel);
   if (current === null) {
-    // no token or error → fall back to 0
     return res.json({ current: 0, goal });
   }
 
   res.json({ current, goal });
 });
 
-// serve overlay HTML
+// ---------- OVERLAY ----------
 app.get('/overlay/subgoal', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'overlay', 'subgoal.html'));
 });
 
-// startup: init DB if available, load tokens, then listen
+// ---------- STARTUP ----------
 async function start() {
   if (process.env.DATABASE_URL) {
     try {
