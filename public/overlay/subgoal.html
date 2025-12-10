@@ -26,7 +26,7 @@
       position: relative;
       width: 120px;
       height: 180px;
-      margin: 0 -30px;
+      margin: 0 -10px;      /* was -30px: small negative = slight gap between digits */
       overflow: hidden;
       display: flex;
       align-items: center;
@@ -37,10 +37,10 @@
       width: auto;
     }
 
-    /* Bring cane closer to numbers */
+    /* Bring cane closer to numbers on both sides */
     .slash {
       height: 220px;
-      margin: 0 40px;  /* was 80px; smaller = closer */
+      margin: 0 25px;       /* was 40px: smaller = closer to digits */
     }
   </style>
 </head>
